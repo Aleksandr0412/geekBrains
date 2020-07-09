@@ -8,7 +8,8 @@ public class Car implements Runnable {
     private Race race;
     private int speed;
     private String name;
-
+    private static AtomicInteger counter = new AtomicInteger(0);
+    private static final Object lock = new Object();
 
     public String getName() {
         return name;
@@ -35,10 +36,28 @@ public class Car implements Runnable {
             e.printStackTrace();
         }
 
-
+        synchronized (lock) {
+            counter.incrementAndGet();
+            if (counter.get() != CARS_COUNT) {
+                try {
+                    lock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                System.out.println("ВАЖНОЕ ОБЪЯВЛЕНИЕ >>> Гонка началась!!!");
+                lock.notifyAll();
+            }
+        }
         for (int i = 0; i < race.getStages().size(); i++) {
             race.getStages().get(i).overcome(this);
         }
 
+        if (counter.decrementAndGet() == CARS_COUNT - 1) {
+            System.out.println(this.name + " WIN!!!!");
+        }
+
+        if (counter.get() == 0)
+            System.out.println("ВАЖНОЕ ОБЪЯВЛЕНИЕ >>> Гонка закончилась!!!");
     }
 }
